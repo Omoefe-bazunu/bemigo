@@ -74,12 +74,12 @@ export default function CheckoutPage() {
     toast.loading("Processing your order...");
 
     try {
-      // 1. Upload payment proof
+      // Upload proof
       const proofRef = ref(storage, `payment-proofs/${user.uid}-${Date.now()}`);
       await uploadBytes(proofRef, proofFile);
       const proofURL = await getDownloadURL(proofRef);
 
-      // 2. Create order FIRST (critical!)
+      // Create order
       const orderRef = await addDoc(collection(db, "orders"), {
         userId: user.uid,
         customerName: form.name,
@@ -92,6 +92,7 @@ export default function CheckoutPage() {
           quantity: i.quantity,
           price: i.discountedPrice || i.price,
           image: i.mainImageURL || i.imageURL,
+          selectedSize: i.selectedSize || null,
         })),
         totalAmount: total,
         paymentProof: proofURL,
@@ -99,46 +100,31 @@ export default function CheckoutPage() {
         createdAt: serverTimestamp(),
       });
 
-      // 3. NOW safely clear the cart — only after order is confirmed saved
-      const deletePromises = cart.map((item) =>
-        deleteDoc(doc(db, "users", user.uid, "cart", item.id))
-      );
+      // CORRECT: Delete using the SAME ID format as addToCart
+      const deletePromises = cart.map(async (item) => {
+        const cartItemId = item.selectedSize
+          ? `${item.id}-${item.selectedSize}`
+          : item.id;
+        await deleteDoc(doc(db, "users", user.uid, "cart", cartItemId));
+      });
       await Promise.all(deletePromises);
 
-      // 4. Send email to admin
+      // Send email & finish
       await fetch("/api/send-order-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderId: orderRef.id,
-          customerName: form.name,
-          email: form.email,
-          phone: form.phone,
-          address: `${form.address}, ${form.city}, ${form.state} ${form.zip}`,
-          total,
-          items: cart.map((i) => ({
-            name: i.name,
-            qty: i.quantity,
-            price: i.discountedPrice || i.price,
-          })),
-          proofURL,
-        }),
+        /* ... */
       });
 
-      // Success!
       toast.dismiss();
-      toast.success("Order placed successfully! 🎉");
+      toast.success("Order placed! Cart cleared.");
       setShowPaymentModal(false);
       router.push("/orders");
     } catch (err) {
-      console.error("Order failed:", err);
-      toast.dismiss();
-      toast.error("Order failed. Your cart is safe.");
+      console.error(err);
+      toast.error("Failed. Cart not cleared.");
     } finally {
       setUploading(false);
     }
   };
-
   if (loading)
     return (
       <div className="min-h-screen flex items-center justify-center">
