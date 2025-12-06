@@ -3,13 +3,13 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useCart } from "@/lib/cart";
 import Image from "next/image";
 import { db, storage } from "@/lib/firebaseConfig";
 import {
   collection,
   addDoc,
   getDocs,
-  deleteDoc,
   doc,
   serverTimestamp,
 } from "firebase/firestore";
@@ -26,6 +26,7 @@ export default function CheckoutPage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [proofFile, setProofFile] = useState(null);
+  const { clearOrderedItems } = useCart();
 
   const [form, setForm] = useState({
     name: "",
@@ -50,7 +51,10 @@ export default function CheckoutPage() {
 
     const fetchCart = async () => {
       const snapshot = await getDocs(collection(db, "users", user.uid, "cart"));
-      const items = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const items = snapshot.docs.map((doc) => ({
+        firestoreId: doc.id,
+        ...doc.data(),
+      }));
       setCart(items);
       setLoading(false);
     };
@@ -100,31 +104,44 @@ export default function CheckoutPage() {
         createdAt: serverTimestamp(),
       });
 
-      // CORRECT: Delete using the SAME ID format as addToCart
-      const deletePromises = cart.map(async (item) => {
-        const cartItemId = item.selectedSize
-          ? `${item.id}-${item.selectedSize}`
-          : item.id;
-        await deleteDoc(doc(db, "users", user.uid, "cart", cartItemId));
-      });
-      await Promise.all(deletePromises);
+      // NEW: Only clear the items that were just ordered
+      await clearOrderedItems(
+        cart.map((item) => ({ firestoreId: item.firestoreId }))
+      );
 
-      // Send email & finish
+      // Send email
       await fetch("/api/send-order-email", {
-        /* ... */
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId: orderRef.id,
+          customerName: form.name,
+          email: form.email,
+          phone: form.phone,
+          address: `${form.address}, ${form.city}, ${form.state} ${form.zip}`,
+          total,
+          items: cart.map((i) => ({
+            name: i.name,
+            qty: i.quantity,
+            price: i.discountedPrice || i.price,
+          })),
+          proofURL,
+        }),
       });
 
       toast.dismiss();
-      toast.success("Order placed! Cart cleared.");
+      toast.success("Order placed successfully!");
       setShowPaymentModal(false);
       router.push("/orders");
     } catch (err) {
-      console.error(err);
-      toast.error("Failed. Cart not cleared.");
+      console.error("Checkout failed:", err);
+      toast.dismiss();
+      toast.error("Order failed. Your cart is safe.");
     } finally {
       setUploading(false);
     }
   };
+
   if (loading)
     return (
       <div className="min-h-screen flex items-center justify-center">

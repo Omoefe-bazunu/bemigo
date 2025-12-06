@@ -19,16 +19,28 @@ export default async function Home() {
     query(collection(db, "products"), orderBy("createdAt", "desc"))
   );
 
-  const products = snapshot.docs.map((doc) => {
-    const data = doc.data();
-    return {
-      id: doc.id,
-      ...data,
-      // Convert Firestore Timestamp to safe string
-      createdAt: data.createdAt?.toDate?.()?.toISOString() || null,
-      // Also handle any nested timestamps if you have them
-    };
-  });
+  const products = await Promise.all(
+    snapshot.docs.map(async (doc) => {
+      const data = doc.data();
+      const reviewsSnap = await getDocs(
+        collection(db, "products", doc.id, "reviews")
+      );
+      const reviews = reviewsSnap.docs.map((r) => r.data());
+      const totalReviews = reviews.length;
+      const avgRating =
+        totalReviews > 0
+          ? reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
+          : 0;
+
+      return {
+        id: doc.id,
+        ...data,
+        avgRating: Number(avgRating.toFixed(1)),
+        totalReviews,
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || null,
+      };
+    })
+  );
 
   // Group by category
   const grouped = products.reduce((acc, product) => {

@@ -11,9 +11,8 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { db } from "@/lib/firebaseConfig";
-import Image from "next/image";
-import Link from "next/link";
-import { Search, Filter, X, ShoppingBag } from "lucide-react";
+import ProductCard from "@/components/common/productcard"; // ← Your real card
+import { Search, Filter, X } from "lucide-react";
 
 const ITEMS_PER_PAGE = 20;
 
@@ -44,10 +43,29 @@ export default function ProductsPage() {
       }
 
       const snapshot = await getDocs(q);
-      const items = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const items = await Promise.all(
+        snapshot.docs.map(async (doc) => {
+          const data = doc.data();
+
+          // Fetch review stats
+          const reviewsSnap = await getDocs(
+            collection(db, "products", doc.id, "reviews")
+          );
+          const reviews = reviewsSnap.docs.map((r) => r.data());
+          const totalReviews = reviews.length;
+          const avgRating =
+            totalReviews > 0
+              ? reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
+              : 0;
+
+          return {
+            id: doc.id,
+            ...data,
+            avgRating: Number(avgRating.toFixed(1)),
+            totalReviews,
+          };
+        })
+      );
 
       if (loadMore) {
         setProducts((prev) => [...prev, ...items]);
@@ -66,7 +84,6 @@ export default function ProductsPage() {
   };
 
   useEffect(() => {
-    setLoading(true);
     fetchProducts();
   }, []);
 
@@ -90,6 +107,7 @@ export default function ProductsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Hero */}
       <div className="bg-gradient-to-r from-orange-600 to-orange-700 text-white py-18 px-6">
         <div className="max-w-7xl mx-auto text-center mt-6">
           <h1 className="text-5xl md:text-6xl font-extrabold mb-4">
@@ -168,51 +186,7 @@ export default function ProductsPage() {
   );
 }
 
-// Reusable Components
-function ProductCard({ product }) {
-  return (
-    <Link href={`/products/${product.id}`} className="group block">
-      <div className="bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden">
-        <div className="relative aspect-square">
-          <Image
-            src={product.mainImageURL}
-            alt={product.name}
-            fill
-            className="object-cover group-hover:scale-110 transition-transform duration-500"
-          />
-          {product.discountedPrice && (
-            <span className="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-              SALE
-            </span>
-          )}
-        </div>
-        <div className="p-4">
-          <h3 className="font-semibold text-gray-800 line-clamp-2 group-hover:text-orange-600">
-            {product.name}
-          </h3>
-          <div className="mt-3 flex items-center justify-between">
-            {product.discountedPrice ? (
-              <div>
-                <span className="text-xl font-bold text-orange-600">
-                  ${product.discountedPrice}
-                </span>
-                <span className="text-sm text-gray-500 line-through ml-2">
-                  ${product.originalPrice || product.price}
-                </span>
-              </div>
-            ) : (
-              <span className="text-xl font-bold text-gray-800">
-                ₦{product.price.toLocaleString()}
-              </span>
-            )}
-            <ShoppingBag className="w-5 h-5 text-gray-400 group-hover:text-orange-600" />
-          </div>
-        </div>
-      </div>
-    </Link>
-  );
-}
-
+// Keep your skeleton and empty state
 function ProductGridSkeleton() {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
@@ -235,7 +209,7 @@ function ProductGridSkeleton() {
 function EmptyState() {
   return (
     <div className="text-center py-20">
-      <ShoppingBag className="w-24 h-24 text-gray-300 mx-auto mb-6" />
+      <div className="w-24 h-24 text-gray-300 mx-auto mb-6">No products</div>
       <p className="text-2xl text-gray-600">No products found</p>
       <p className="text-gray-500 mt-2">Try adjusting your search or filters</p>
     </div>

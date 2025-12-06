@@ -2,7 +2,15 @@
 
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebaseConfig";
-import { doc, setDoc } from "firebase/firestore";
+import {
+  doc,
+  setDoc,
+  collection,
+  getDocs,
+  deleteDoc,
+  query,
+  where,
+} from "firebase/firestore";
 import { useState } from "react";
 
 export function useCart() {
@@ -16,37 +24,56 @@ export function useCart() {
     }
 
     try {
-      // Create a unique ID for the cart item (combine product ID and size if applicable)
       const cartItemId = item.selectedSize
         ? `${item.id}-${item.selectedSize}`
         : item.id;
 
-      // Reference to the cart item in Firestore
       const cartItemRef = doc(db, "users", user.uid, "cart", cartItemId);
 
-      // Check if item already exists in cart
       const cartData = {
         id: item.id,
         name: item.name,
         price: item.price,
         discountedPrice: item.discountedPrice || null,
-        imageURL: item.imageURL,
-        type: item.type,
+        mainImageURL: item.mainImageURL || item.imageURL,
         selectedSize: item.selectedSize || null,
-        quantity: 1, // Default quantity
+        quantity: item.quantity || 1,
+        addedAt: new Date(),
       };
 
-      // Use setDoc with merge: true to add or update the item
-      // If item exists, we'll increment quantity separately
       await setDoc(cartItemRef, cartData, { merge: true });
-
       setError(null);
     } catch (err) {
       console.error("Error adding to cart:", err);
       setError(err.message);
-      alert("Failed to add item to cart. Please try again.");
     }
   };
 
-  return { addToCart, error };
+  // NEW: Only clear items that were just ordered
+  const clearOrderedItems = async (orderedItems = []) => {
+    if (!user || orderedItems.length === 0) return;
+
+    try {
+      const deletePromises = orderedItems.map(async (item) => {
+        // Use the EXACT firestoreId from cart (e.g. "abc123-M")
+        const cartItemId = item.firestoreId;
+
+        if (!cartItemId) {
+          console.warn("Missing firestoreId for item:", item);
+          return;
+        }
+
+        const itemDoc = doc(db, "users", user.uid, "cart", cartItemId);
+        await deleteDoc(itemDoc);
+      });
+
+      await Promise.all(deletePromises);
+      console.log("Ordered items cleared from cart");
+    } catch (err) {
+      console.error("Error clearing cart:", err);
+      throw err;
+    }
+  };
+
+  return { addToCart, clearOrderedItems, error };
 }

@@ -14,6 +14,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function UserOrders() {
   const { user } = useAuth();
@@ -47,6 +48,13 @@ export default function UserOrders() {
 
     fetchOrders();
   }, [user]);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (user === null) {
+      router.replace("/login"); // ← Forces redirect
+    }
+  }, [user, router]);
 
   const toggleExpand = (id) => {
     setExpandedId(expandedId === id ? null : id);
@@ -70,6 +78,16 @@ export default function UserOrders() {
     }).format(date);
   };
 
+  if (user === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-orange-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-xl text-gray-600">Redirecting to login...</p>
+        </div>
+      </div>
+    );
+  }
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -78,23 +96,13 @@ export default function UserOrders() {
     );
   }
 
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-xl text-gray-600">Redirecting to login...</p>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 py-25 px-4">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-extrabold text-orange-600 mb-4">
-            My Orders
-          </h1>
-          <p className="text-gray-600 text-lg">
+        <div className="text-center mb-12 bg-orange-600 rounded-3xl py-10 px-6 shadow-xl">
+          <h1 className="text-5xl font-extrabold text-white mb-4">My Orders</h1>
+          <p className="text-gray-50 text-lg">
             Track your purchases and payment status
           </p>
         </div>

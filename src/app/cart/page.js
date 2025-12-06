@@ -114,10 +114,15 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-25 px-4">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl md:text-5xl font-extrabold text-center text-orange-600 mb-10">
-          Your Cart
-        </h1>
+      <div className="max-w-4xl mx-auto ">
+        <div className="text-center mb-12 bg-orange-600 rounded-3xl py-10 px-6 shadow-xl">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-center text-white">
+            Your Cart
+          </h1>
+          <p className="text-gray-50 text-lg">
+            Here are the list of items you have added to your cart
+          </p>
+        </div>
 
         {cart.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-3xl shadow-lg">

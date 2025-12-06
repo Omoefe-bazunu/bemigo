@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, Star } from "lucide-react";
 
 export default function ProductCard({ product }) {
   if (!product || !product.id) {
@@ -25,18 +25,44 @@ export default function ProductCard({ product }) {
     price = 0,
     discountedPrice,
     originalPrice,
+    avgRating = 0, // ← New: average rating
+    totalReviews = 0, // ← New: total number of reviews
   } = product;
 
-  // EXACTLY SAME LOGIC as /products page
   const displayPrice = discountedPrice
     ? Number(discountedPrice)
     : Number(price);
   const hasDiscount = originalPrice && displayPrice < Number(originalPrice);
 
+  // Star component (small)
+  const StarRating = ({ rating }) => {
+    return (
+      <div className="flex items-center gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Star
+            key={star}
+            className={`w-4 h-4 ${
+              star <= Math.floor(rating)
+                ? "fill-orange-400 text-orange-400"
+                : star - 0.5 <= rating
+                ? "fill-orange-400 text-orange-400"
+                : "text-gray-300"
+            }`}
+          />
+        ))}
+        {totalReviews > 0 && (
+          <span className="text-xs text-gray-500 ml-1">
+            ({totalReviews}) reviews
+          </span>
+        )}
+      </div>
+    );
+  };
+
   return (
     <Link href={`/products/${id}`} className="group block">
       <div className="bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden">
-        {/* Image — EXACT same as /products */}
+        {/* Image */}
         <div className="relative aspect-square">
           <Image
             src={mainImageURL}
@@ -52,12 +78,20 @@ export default function ProductCard({ product }) {
           )}
         </div>
 
-        {/* Details — EXACT same as /products */}
+        {/* Details */}
         <div className="p-4">
           <h3 className="font-semibold text-gray-800 line-clamp-2 group-hover:text-orange-600 transition-colors">
             {name}
           </h3>
 
+          {/* Rating */}
+          {avgRating > 0 && (
+            <div className="mt-2">
+              <StarRating rating={avgRating} />
+            </div>
+          )}
+
+          {/* Price */}
           <div className="mt-3 flex items-center justify-between">
             {hasDiscount ? (
               <div>

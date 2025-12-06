@@ -1,15 +1,22 @@
 import "./globals.css";
 import Header from "@/components/common/header";
 import Footer from "@/components/common/footer";
-import { CartProvider } from "@/lib/cart";
 import { AuthProvider } from "@/context/AuthContext";
 // Import WhatsAppIcon for the floating button
 import { IoLogoWhatsapp } from "react-icons/io";
+import { Bricolage_Grotesque } from "next/font/google";
 
 export const metadata = {
   title: "Bemigo Enterprises",
   description: "Quality & Affordable Essentials for Everyday Living.",
 };
+
+// Load Bricolage Grotesque properly
+const bricolage = Bricolage_Grotesque({
+  subsets: ["latin"],
+  variable: "--font-bricolage",
+  display: "swap",
+});
 
 // Define the component for the floating WhatsApp button
 const WhatsAppWidget = () => {
@@ -39,10 +46,11 @@ const WhatsAppWidget = () => {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" className={bricolage.variable}>
       <body className="min-h-screen flex flex-col">
         <AuthProvider>
           <Header />
+
           <main className="flex-grow">{children}</main>
           <Footer />
           {/* The WhatsApp widget is placed here to appear on all pages */}
