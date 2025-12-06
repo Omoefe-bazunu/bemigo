@@ -1,4 +1,4 @@
-import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebaseConfig";
 import Button from "@/components/common/buttons";
 import ProductCard from "@/components/common/productcard";
@@ -14,39 +14,34 @@ export const metadata = {
 };
 
 export default async function Home() {
-  // Fetch all products
-  const snapshot = await getDocs(
-    query(collection(db, "products"), orderBy("createdAt", "desc"))
-  );
+  let products = [];
+  let error = null;
 
-  const products = await Promise.all(
-    snapshot.docs.map(async (doc) => {
+  try {
+    const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
+    const snapshot = await getDocs(q);
+
+    products = snapshot.docs.map((doc) => {
       const data = doc.data();
-      const reviewsSnap = await getDocs(
-        collection(db, "products", doc.id, "reviews")
-      );
-      const reviews = reviewsSnap.docs.map((r) => r.data());
-      const totalReviews = reviews.length;
-      const avgRating =
-        totalReviews > 0
-          ? reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
-          : 0;
-
       return {
         id: doc.id,
         ...data,
-        avgRating: Number(avgRating.toFixed(1)),
-        totalReviews,
+        // Safe access for Firestore Timestamp
         createdAt: data.createdAt?.toDate?.()?.toISOString() || null,
+        avgRating: data.avgRating || 0,
+        totalReviews: data.totalReviews || 0,
       };
-    })
-  );
+    });
+  } catch (err) {
+    console.error("Firestore fetch error:", err);
+    error = err.message;
+  }
 
   // Group by category
-  const grouped = products.reduce((acc, product) => {
-    const cat = product.category || "Uncategorized";
-    if (!acc[cat]) acc[cat] = [];
-    acc[cat].push(product);
+  const grouped = products.reduce((acc, p) => {
+    const cat = p.category || "Uncategorized";
+    acc[cat] = acc[cat] || [];
+    acc[cat].push(p);
     return acc;
   }, {});
 
@@ -63,7 +58,7 @@ export default async function Home() {
         backgroundAttachment: "fixed",
       }}
     >
-      {/* Hero Section */}
+      {/* Hero */}
       <section className="relative">
         <div className="absolute inset-0 bg-black opacity-60"></div>
         <div className="relative max-w-7xl mx-auto pt-35 pb-20 px-6 text-center">
@@ -85,7 +80,14 @@ export default async function Home() {
 
       <AboutUs />
 
-      {/* Categories Sections */}
+      {/* Show error only in dev (optional) */}
+      {error && process.env.NODE_ENV !== "production" && (
+        <div className="text-center py-8 text-red-600">
+          Error loading products: {error}
+        </div>
+      )}
+
+      {/* Category Sections */}
       {categories.length === 0 ? (
         <section className="py-16 px-6 bg-white text-center">
           <p className="text-gray-600">No products available yet.</p>
@@ -110,7 +112,7 @@ export default async function Home() {
               {items.length > 3 && (
                 <div className="text-center mt-12">
                   <Button
-                    href="/products"
+                    href={`/products?category=${encodeURIComponent(category)}`}
                     className="bg-gray-800 hover:bg-gray-900 text-white px-8 py-3 rounded-lg font-medium"
                   >
                     See All {category} →
@@ -122,26 +124,27 @@ export default async function Home() {
         })
       )}
 
-      {/* Bulk Orders Available. Contact us for more details! */}
+      {/* Bulk Orders */}
       <section className="py-20 px-6 bg-gradient-to-r from-orange-600 to-orange-700 text-white">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl md:text-5xl font-extrabold mb-6">
             Are you a Bulk Buyer?
           </h2>
           <p className="text-lg md:text-xl mb-10 opacity-95">
-            Get special wholesale prices and dedicated support for bulk orders.
+            Get special wholesale prices and dedicated support.
           </p>
           <a
-            href="https://wa.me/2349126939069?text=Hello%20Bemigo%20Team!%20I%27m%20interested%20in%20bulk%20purchase.%20Can%20we%20discuss%20wholesale%20pricing%20and%20availability%3F"
+            href="https://wa.me/2349126939069?text=Hello%20Bemigo%20Team!%20I%27m%20interested%20in%20bulk%20purchase."
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-3 bg-white text-orange-700 font-bold px-10 py-5 rounded-full text-lg hover:bg-gray-100 transition shadow-lg"
+            className="inline-flex items-center gap-3 bg-white text-orange-700 font-bold px-10 py-5 rounded-full text-lg hover:bg-gray-100 transition"
           >
             <MessageCircleIcon />
             Contact Sales on WhatsApp
           </a>
         </div>
       </section>
+
       <CustomerReviews />
       <ContactUs />
     </div>
