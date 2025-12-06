@@ -20,7 +20,7 @@ export default function Footer() {
         {/* Phone Number */}
         <p className="text-gray-300 mb-4">
           <a
-            href="tel:+18172989961"
+            href="tel:+2349126939069"
             className="hover:text-gray-100 transition-colors"
           >
             +234-9126939069
@@ -30,7 +30,7 @@ export default function Footer() {
         {/* Social Links */}
         <div className="flex justify-center gap-4">
           <a
-            href="https://www.instagram.com"
+            href="hhttps://www.instagram.com/jen_nystores?igsh=Z2dxZm00OHQ0cmdq"
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue-700 hover:text-blue-800 transition-colors bg-white p-4 rounded-full"

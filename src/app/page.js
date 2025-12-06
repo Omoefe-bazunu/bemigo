@@ -15,7 +15,6 @@ export const metadata = {
 
 export default async function Home() {
   let products = [];
-  let error = null;
 
   try {
     const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
@@ -26,18 +25,13 @@ export default async function Home() {
       return {
         id: doc.id,
         ...data,
-        // Safe access for Firestore Timestamp
         createdAt: data.createdAt?.toDate?.()?.toISOString() || null,
-        avgRating: data.avgRating || 0,
-        totalReviews: data.totalReviews || 0,
       };
     });
   } catch (err) {
-    console.error("Firestore fetch error:", err);
-    error = err.message;
+    console.error("Firestore error:", err);
   }
 
-  // Group by category
   const grouped = products.reduce((acc, p) => {
     const cat = p.category || "Uncategorized";
     acc[cat] = acc[cat] || [];
@@ -80,52 +74,65 @@ export default async function Home() {
 
       <AboutUs />
 
-      {/* Show error only in dev (optional) */}
-      {error && process.env.NODE_ENV !== "production" && (
-        <div className="text-center py-8 text-red-600">
-          Error loading products: {error}
-        </div>
-      )}
-
-      {/* Category Sections */}
+      {/* Category Highlights */}
       {categories.length === 0 ? (
         <section className="py-16 px-6 bg-white text-center">
           <p className="text-gray-600">No products available yet.</p>
         </section>
       ) : (
-        categories.map((category, idx) => {
-          const items = grouped[category];
-          const bgClass = idx % 2 === 0 ? "bg-white" : "bg-gray-50";
+        <>
+          {categories.map((category, idx) => {
+            const items = grouped[category];
+            const bgClass = idx % 2 === 0 ? "bg-white" : "bg-gray-50";
 
-          return (
-            <section key={category} className={`py-16 px-6 ${bgClass}`}>
-              <h2 className="text-3xl md:text-4xl font-bold text-center mb-10">
-                {category}
-              </h2>
+            return (
+              <section key={category} className={`py-16 px-6 ${bgClass}`}>
+                <h2 className="text-3xl md:text-4xl font-bold text-center mb-10">
+                  {category}
+                </h2>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-                {items.slice(0, 3).map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-
-              {items.length > 3 && (
-                <div className="text-center mt-12">
-                  <Button
-                    href={`/products?category=${encodeURIComponent(category)}`}
-                    className="bg-gray-800 hover:bg-gray-900 text-white px-8 py-3 rounded-lg font-medium"
-                  >
-                    See All {category} →
-                  </Button>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+                  {items.slice(0, 3).map((product) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
                 </div>
-              )}
-            </section>
-          );
-        })
+
+                {items.length > 3 && (
+                  <div className="text-center mt-12">
+                    <Button
+                      href={`/products?category=${encodeURIComponent(
+                        category
+                      )}`}
+                      className="bg-gray-800 hover:bg-gray-900 text-white px-8 py-3 rounded-lg font-medium"
+                    >
+                      See All {category}
+                    </Button>
+                  </div>
+                )}
+              </section>
+            );
+          })}
+
+          {/* See All Products CTA */}
+          <section className="py-20 px-6 bg-white text-orange-600 border-t border-orange-600 text-center">
+            <h2 className="text-3xl md:text-5xl font-extrabold mb-6">
+              Explore All {products.length} Products
+            </h2>
+            <p className="text-lg md:text-xl text-gray-600 mb-10 max-w-2xl mx-auto opacity-95">
+              See all our quality and affordable essentials in one place.
+            </p>
+            <Button
+              href="/products"
+              className="bg-orange-600 text-white hover:bg-orange-700 font-bold px-12 py-5 rounded-full text-xl shadow-lg"
+            >
+              See All Products
+            </Button>
+          </section>
+        </>
       )}
 
       {/* Bulk Orders */}
-      <section className="py-20 px-6 bg-gradient-to-r from-orange-600 to-orange-700 text-white">
+      <section className="py-20 px-6 bg-gradient-to-r from-orange-700 to-orange-800 text-white">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl md:text-5xl font-extrabold mb-6">
             Are you a Bulk Buyer?
