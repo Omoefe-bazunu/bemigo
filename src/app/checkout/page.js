@@ -153,11 +153,16 @@ export default function CheckoutPage() {
   return (
     <>
       <Toaster position="top-center" />
-      <div className="min-h-screen bg-gray-50 py-12 px-4  relative">
+      <div className="min-h-screen bg-gray-50 py-25 px-4  relative">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-5xl font-extrabold text-center text-orange-600 mb-12">
-            Checkout
-          </h1>
+          <div className="text-center mb-12 bg-orange-600 rounded-3xl py-10 px-6 shadow-xl">
+            <h1 className="text-4xl md:text-5xl font-extrabold text-center text-white">
+              Checkout
+            </h1>
+            <p className="text-gray-50 text-lg">
+              Complete your order details below and proceed to payment.
+            </p>
+          </div>
 
           <div className="grid lg:grid-cols-2 gap-10">
             {/* Order Summary */}

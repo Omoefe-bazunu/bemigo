@@ -21,7 +21,7 @@ const bricolage = Bricolage_Grotesque({
 // Define the component for the floating WhatsApp button
 const WhatsAppWidget = () => {
   // Use the phone number provided, encoding the URL properly
-  const phoneNumber = "+23490126939069";
+  const phoneNumber = "090126939069";
   const defaultMessage =
     "Hello Bemigo Enterprises, I'm interested in your products!";
 

@@ -33,7 +33,7 @@ export default function about() {
           {/* Social Icons */}
           <div className="flex justify-center gap-8 mb-16 flex-wrap">
             <a
-              href="https://facebook.com/bemigoenterprises"
+              href="https://web.facebook.com/profile.php?id=61583111909212"
               target="_blank"
               rel="noopener noreferrer"
               className="group"
@@ -45,7 +45,7 @@ export default function about() {
             </a>
 
             <a
-              href="https://instagram.com/bemigoenterprises"
+              href="https://www.instagram.com/jen_nystores?igsh=Z2dxZm00OHQ0cmdq"
               target="_blank"
               rel="noopener noreferrer"
               className="group"
@@ -57,7 +57,7 @@ export default function about() {
             </a>
 
             <a
-              href="https://tiktok.com/@bemigoenterprises"
+              href="https://www.tiktok.com/@jennymigo?_r=1&_t=ZS-91zgEEvRX4U"
               target="_blank"
               rel="noopener noreferrer"
               className="group"
@@ -85,8 +85,8 @@ export default function about() {
           <div className="bg-gray-50 rounded-2xl p-10 space-y-6 max-w-2xl mx-auto">
             <h3 className="text-2xl font-bold text-gray-800">Get in Touch</h3>
             <div className="space-y-4 text-left">
-              <div className="flex items-center gap-4">
-                <span className="text-2xl">Phone</span>
+              <div className="flex flex-col items-center gap-2">
+                <span className="text-2xl">Phone:</span>
                 <a
                   href="tel:+2349126939069"
                   className="text-lg text-orange-600 font-medium"
@@ -94,8 +94,8 @@ export default function about() {
                   +234 912 693 9069
                 </a>
               </div>
-              <div className="flex items-center gap-4">
-                <span className="text-2xl">WhatsApp</span>
+              <div className="flex flex-col items-center gap-2">
+                <span className="text-2xl">WhatsApp:</span>
                 <a
                   href="https://wa.me/2349126939069"
                   className="text-lg text-green-600 font-medium"
@@ -103,8 +103,9 @@ export default function about() {
                   Chat Now
                 </a>
               </div>
-              <div className="flex items-center gap-4">
-                <span className="text-2xl">Email</span>
+              <div className="flex flex-col items-center gap-2">
+                <span className="text-2xl">Email:</span>
+
                 <a
                   href="mailto:bemigoenterprises@gmail.com"
                   className="text-lg text-orange-600 font-medium"
