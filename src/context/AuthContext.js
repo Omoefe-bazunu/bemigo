@@ -6,11 +6,12 @@ import {
   signOut,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  getIdToken as getFirebaseIdToken, // ✅ alias to avoid conflict
 } from "firebase/auth";
 import { auth } from "@/lib/firebaseConfig";
 import { useRouter } from "next/navigation";
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
 export const useAuth = () => useContext(AuthContext);
 
@@ -20,8 +21,8 @@ export const AuthProvider = ({ children }) => {
   const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user || null);
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser || null);
       setLoading(false);
     });
 
@@ -39,7 +40,7 @@ export const AuthProvider = ({ children }) => {
       return userCredential;
     } catch (error) {
       console.error("Login error:", error.message);
-      throw error; // Re-throw so the calling component can handle it
+      throw error;
     }
   };
 
@@ -50,12 +51,10 @@ export const AuthProvider = ({ children }) => {
         email,
         password
       );
-      // DON'T redirect here - let the signup page handle it after creating Firestore doc
-      // router.push("/cart");
-      return userCredential; // RETURN the userCredential so signup page can use it
+      return userCredential;
     } catch (error) {
       console.error("Signup error:", error.message);
-      throw error; // Re-throw so the calling component can handle it
+      throw error;
     }
   };
 
@@ -64,8 +63,30 @@ export const AuthProvider = ({ children }) => {
     router.push("/login");
   };
 
+  // Get Firebase ID token for backend API calls
+  const getIdToken = async (forceRefresh = false) => {
+    if (!user) return null;
+
+    try {
+      const token = await getFirebaseIdToken(user, forceRefresh);
+      return token;
+    } catch (error) {
+      console.error("Error getting ID token:", error);
+      return null;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, loading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        signup,
+        logout,
+        getIdToken,
+        loading,
+      }}
+    >
       {!loading && children}
     </AuthContext.Provider>
   );

@@ -2,8 +2,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from "@/lib/firebaseConfig";
+import { db } from "@/lib/firebaseConfig";
 import {
   DndContext,
   closestCenter,
@@ -130,21 +129,40 @@ export default function AddProductForm() {
     return Object.keys(err).length === 0;
   };
 
+  const uploadToCloudinary = async (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append(
+      "upload_preset",
+      process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+    );
+    formData.append("folder", "products");
+
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to upload to Cloudinary");
+    }
+
+    const data = await response.json();
+    return data.secure_url;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
 
     setLoading(true);
     try {
-      const urls = [];
-      for (const img of images) {
-        const storageRef = ref(
-          storage,
-          `products/${Date.now()}-${img.file.name}`
-        );
-        await uploadBytes(storageRef, img.file);
-        urls.push(await getDownloadURL(storageRef));
-      }
+      // Upload all images to Cloudinary
+      const uploadPromises = images.map((img) => uploadToCloudinary(img.file));
+      const urls = await Promise.all(uploadPromises);
 
       const finalPrice = formData.discountedPrice
         ? Number(formData.discountedPrice)

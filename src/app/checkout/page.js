@@ -5,15 +5,13 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/lib/cart";
 import Image from "next/image";
-import { db, storage } from "@/lib/firebaseConfig";
+import { db } from "@/lib/firebaseConfig";
 import {
   collection,
   addDoc,
   getDocs,
-  doc,
   serverTimestamp,
 } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { CreditCard, Upload, CheckCircle, X } from "lucide-react";
 import Link from "next/link";
 import toast, { Toaster } from "react-hot-toast";
@@ -68,6 +66,31 @@ export default function CheckoutPage() {
     }
   };
 
+  const uploadToCloudinary = async (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append(
+      "upload_preset",
+      process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+    );
+    formData.append("folder", `payment-proofs/${user.uid}`);
+
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to upload to Cloudinary");
+    }
+
+    const data = await response.json();
+    return data.secure_url;
+  };
+
   const handlePayment = async () => {
     if (!proofFile) {
       toast.error("Please upload payment proof");
@@ -78,10 +101,8 @@ export default function CheckoutPage() {
     toast.loading("Processing your order...");
 
     try {
-      // Upload proof
-      const proofRef = ref(storage, `payment-proofs/${user.uid}-${Date.now()}`);
-      await uploadBytes(proofRef, proofFile);
-      const proofURL = await getDownloadURL(proofRef);
+      // Upload proof to Cloudinary
+      const proofURL = await uploadToCloudinary(proofFile);
 
       // Create order
       const orderRef = await addDoc(collection(db, "orders"), {
@@ -104,7 +125,7 @@ export default function CheckoutPage() {
         createdAt: serverTimestamp(),
       });
 
-      // NEW: Only clear the items that were just ordered
+      // Clear the items that were just ordered
       await clearOrderedItems(
         cart.map((item) => ({ firestoreId: item.firestoreId }))
       );
@@ -314,14 +335,15 @@ export default function CheckoutPage() {
                 </p>
                 <div className="bg-white p-5 rounded-xl shadow-inner space-y-3 text-left">
                   <p className="font-medium">
-                    <span className="text-gray-600">Bank:</span> GTBank
+                    <span className="text-gray-600">Bank:</span> United Bank of
+                    Africa (UBA)
                   </p>
                   <p className="font-medium">
                     <span className="text-gray-600">Name:</span> Jennifer
                     Ajemigbitse
                   </p>
                   <p className="font-medium">
-                    <span className="text-gray-600">Account:</span> 0701234567
+                    <span className="text-gray-600">Account:</span> 2308959444
                   </p>
                 </div>
                 <p className="mt-5 text-3xl font-bold text-orange-600">
