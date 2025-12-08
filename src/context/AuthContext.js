@@ -30,21 +30,32 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
       router.push("/cart");
+      return userCredential;
     } catch (error) {
       console.error("Login error:", error.message);
-      alert(error.message);
+      throw error; // Re-throw so the calling component can handle it
     }
   };
 
   const signup = async (email, password) => {
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      router.push("/cart");
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      // DON'T redirect here - let the signup page handle it after creating Firestore doc
+      // router.push("/cart");
+      return userCredential; // RETURN the userCredential so signup page can use it
     } catch (error) {
       console.error("Signup error:", error.message);
-      alert(error.message);
+      throw error; // Re-throw so the calling component can handle it
     }
   };
 

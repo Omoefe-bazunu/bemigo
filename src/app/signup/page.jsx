@@ -1,13 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+import { auth } from "@/lib/firebaseConfig";
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+} from "firebase/auth";
 import { Eye, EyeOff } from "lucide-react";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebaseConfig";
 
 export default function SignupPage() {
-  const { signup } = useAuth();
+  const router = useRouter();
   const [formData, setFormData] = useState({
     fullName: "",
     phoneNumber: "",
@@ -28,49 +33,72 @@ export default function SignupPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     const { fullName, phoneNumber, email, password, confirmPassword } =
       formData;
 
-    // Validation
+    // Validation (same as before)
     if (!fullName || !email || !password || !confirmPassword) {
       setError("All fields are required");
+      setLoading(false);
       return;
     }
     if (password !== confirmPassword) {
       setError("Passwords do not match");
+      setLoading(false);
       return;
     }
     if (password.length < 6) {
       setError("Password must be at least 6 characters");
+      setLoading(false);
       return;
     }
 
-    setLoading(true);
-
     try {
-      const userCredential = await signup(email, password);
+      // 1. Create user in Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
       const user = userCredential.user;
 
-      // Save additional user data to Firestore
-      await setDoc(doc(db, "users", user.uid), {
-        displayName: fullName.trim(),
-        phoneNumber: phoneNumber.trim() || null,
-        photoURL: null,
-        email: user.email,
-        createdAt: new Date().toISOString(),
+      // 2. CRITICAL: Wait for auth state to update (this fixes everything)
+      await new Promise((resolve) => {
+        const unsubscribe = onAuthStateChanged(auth, (u) => {
+          if (u) {
+            unsubscribe();
+            resolve(u);
+          }
+        });
       });
 
-      // Optional: Update auth profile name
-      // await updateProfile(user, { displayName: fullName });
+      // 3. Now safe to write to Firestore
+      const userData = {
+        displayName: fullName.trim(),
+        phoneNumber: phoneNumber.trim() || "",
+        email: user.email,
+        createdAt: Timestamp.now(),
+      };
+
+      await setDoc(doc(db, "users", user.uid), userData);
 
       alert("Account created successfully!");
+      router.push("/cart");
     } catch (err) {
-      setError(
-        err.message.includes("email-already-in-use")
-          ? "This email is already registered"
-          : "Failed to create account. Try again."
-      );
+      console.error("Signup error:", err);
+      let errorMessage = "Failed to create account.";
+
+      if (err.code === "auth/email-already-in-use") {
+        errorMessage = "This email is already registered";
+      } else if (err.code === "auth/weak-password") {
+        errorMessage = "Password is too weak";
+      } else if (err.code === "auth/invalid-email") {
+        errorMessage = "Invalid email address";
+      }
+
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -110,6 +138,7 @@ export default function SignupPage() {
             value={formData.phoneNumber}
             onChange={handleChange}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-orange-600 focus:border-orange-600 transition"
+            disabled={loading}
           />
 
           {/* Email */}
@@ -141,6 +170,7 @@ export default function SignupPage() {
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-orange-700"
+              disabled={loading}
             >
               {showPassword ? (
                 <EyeOff className="h-5 w-5" />
@@ -166,6 +196,7 @@ export default function SignupPage() {
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-orange-700"
+              disabled={loading}
             >
               {showConfirmPassword ? (
                 <EyeOff className="h-5 w-5" />

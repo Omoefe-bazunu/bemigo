@@ -9,6 +9,7 @@ import AddProductForm from "@/components/admin/addproduct"; // Use the generic A
 import ProductList from "@/components/admin/productlist";
 import MessagesList from "@/components/admin/messagelist";
 import OrdersList from "@/components/admin/orderslist";
+import UsersList from "@/components/admin/userslist";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -17,6 +18,12 @@ export default function AdminPage() {
   const [authLoading, setAuthLoading] = useState(true);
   const [loginLoading, setLoginLoading] = useState(false); // NEW: Login specific loading state
   const [loginError, setLoginError] = useState("");
+  const [userCount, setUserCount] = useState(0);
+
+  // Create a wrapper component that sets the count
+  const UsersListWithCount = () => {
+    return <UsersList onCountChange={setUserCount} />;
+  };
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -282,6 +289,22 @@ export default function AdminPage() {
           {expandedForm === "ordersList" && (
             <div className="p-6">
               <OrdersList />
+            </div>
+          )}
+        </div>
+        {/* Users List Section */}
+
+        <div className="border border-gray-200 rounded-lg shadow-md">
+          <button
+            onClick={() => toggleForm("usersList")}
+            className="w-full cursor-pointer px-6 py-3 bg-gray-100 text-gray-800 font-semibold text-left flex justify-between items-center rounded-t-lg hover:bg-gray-200 transition-colors"
+          >
+            <span>Users List ({userCount})</span>
+            <span>{expandedForm === "usersList" ? "−" : "+"}</span>
+          </button>
+          {expandedForm === "usersList" && (
+            <div className="p-6">
+              <UsersListWithCount />
             </div>
           )}
         </div>
