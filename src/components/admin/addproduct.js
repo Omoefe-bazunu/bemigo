@@ -135,7 +135,7 @@ export default function AddProductForm() {
     formData.append("folder", "products");
 
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/upload-image`,
+      `https://bemigo-backend.onrender.com/api/upload-image`,
       {
         method: "POST",
         body: formData,

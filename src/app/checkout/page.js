@@ -72,7 +72,7 @@ export default function CheckoutPage() {
     formData.append("folder", `payment-proofs/${user.uid}`);
 
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/upload-image`,
+      `https://bemigo-backend.onrender.com/api/upload-image`,
       {
         method: "POST",
         body: formData,
