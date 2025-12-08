@@ -1,0 +1,72 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // =========================
+    //  PUBLIC COLLECTIONS
+    // =========================
+    
+    // Catering products - anyone can read, only authenticated users can write
+    match /catering/{productId} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null;
+    }
+    
+    // Fashion products - anyone can read, only authenticated users can write
+    match /fashion/{productId} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null;
+    }
+
+    // Reviews - anyone can read, authenticated users can write their own
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
+
+    // Testimonials - anyone can read, authenticated users can write
+    match /testimonials/{testimonialId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // Contact Messages (Public form submissions)
+match /contactMessages/{messageId} {
+  allow read: if true;
+  allow create: if request.resource.data.keys().hasAll(["name", "email", "message"]) &&
+                 request.resource.data.name is string &&
+                 request.resource.data.email is string &&
+                 request.resource.data.message is string;
+  allow update, delete: if true;
+}
+    
+    // =========================
+    //  USER-SPECIFIC COLLECTIONS
+    // =========================
+    
+     // Cart - each user can only read/write their own cart
+    match /users/{userId}/cart/{cartItemId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Orders - user can read/write their own, admin can read all
+    match /orders/{orderId} {
+      allow read: if (request.auth != null && request.auth.token.email == "info@higher.com.ng") || (request.auth != null && resource.data.userId == request.auth.uid);
+      allow write: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+    // =========================
+    //  ADMIN CONTROLS (OPTIONAL)
+    // =========================
+    
+    match /admin/{document=**} {
+      allow read, write: if request.auth != null && request.auth.token.email == "info@higher.com.ng";
+    }
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
