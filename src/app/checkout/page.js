@@ -66,17 +66,13 @@ export default function CheckoutPage() {
     }
   };
 
-  const uploadToCloudinary = async (file) => {
+  const uploadToBackend = async (file) => {
     const formData = new FormData();
     formData.append("file", file);
-    formData.append(
-      "upload_preset",
-      process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
-    );
     formData.append("folder", `payment-proofs/${user.uid}`);
 
     const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+      `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/upload-image`,
       {
         method: "POST",
         body: formData,
@@ -84,11 +80,15 @@ export default function CheckoutPage() {
     );
 
     if (!response.ok) {
-      throw new Error("Failed to upload to Cloudinary");
+      const errorData = await response.json().catch(() => ({}));
+      console.error("Upload error:", errorData);
+      throw new Error(
+        `Upload failed: ${errorData.error || response.statusText}`
+      );
     }
 
     const data = await response.json();
-    return data.secure_url;
+    return data.url;
   };
 
   const handlePayment = async () => {
@@ -101,8 +101,8 @@ export default function CheckoutPage() {
     toast.loading("Processing your order...");
 
     try {
-      // Upload proof to Cloudinary
-      const proofURL = await uploadToCloudinary(proofFile);
+      // Upload proof to backend (which uploads to Cloudinary)
+      const proofURL = await uploadToBackend(proofFile);
 
       // Create order
       const orderRef = await addDoc(collection(db, "orders"), {

@@ -132,14 +132,10 @@ export default function AddProductForm() {
   const uploadToCloudinary = async (file) => {
     const formData = new FormData();
     formData.append("file", file);
-    formData.append(
-      "upload_preset",
-      process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
-    );
     formData.append("folder", "products");
 
     const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+      `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/upload-image`,
       {
         method: "POST",
         body: formData,
@@ -147,11 +143,15 @@ export default function AddProductForm() {
     );
 
     if (!response.ok) {
-      throw new Error("Failed to upload to Cloudinary");
+      const errorData = await response.json().catch(() => ({}));
+      console.error("Upload error:", errorData);
+      throw new Error(
+        `Upload failed: ${errorData.error || response.statusText}`
+      );
     }
 
     const data = await response.json();
-    return data.secure_url;
+    return data.url;
   };
 
   const handleSubmit = async (e) => {
