@@ -272,7 +272,7 @@ export default function ProductDetailPage({ params }) {
               <div className="flex items-center gap-3 text-lg">
                 <Check className="w-6 h-6 text-green-600" />
                 <span className="font-medium">
-                  In Stock —{" "}
+                  {product.availability} —{" "}
                   <span className="text-green-600">
                     {product.qty} available
                   </span>
