@@ -91,7 +91,7 @@ export default function AdminOrders() {
       fulfilled: "bg-green-100 text-green-800 border-green-300",
       rejected: "bg-red-100 text-red-800 border-red-300",
     };
-    return `px-4 py-2 rounded-full text-sm font-bold border ${
+    return `px-4 py-2 w-full rounded-full text-sm font-bold border ${
       map[status] || "bg-gray-100 text-gray-800"
     }`;
   };
@@ -132,7 +132,7 @@ export default function AdminOrders() {
                     onClick={() => toggleExpand(order.id)}
                     className="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition"
                   >
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center flex-col ">
                       <div className="text-left">
                         <h3 className="text-xl font-bold text-gray-800">
                           Order #{order.id.slice(-8).toUpperCase()}
@@ -141,7 +141,11 @@ export default function AdminOrders() {
                           {order.customerName} • {formatDate(order.createdAt)}
                         </p>
                       </div>
-                      <span className={getStatusBadge(order.status)}>
+                      <span
+                        className={`mt-2 text-left ${getStatusBadge(
+                          order.status
+                        )}`}
+                      >
                         {order.status.charAt(0).toUpperCase() +
                           order.status.slice(1)}
                       </span>
@@ -224,7 +228,7 @@ export default function AdminOrders() {
 
                       {/* Action Buttons */}
                       {order.status === "pending" && (
-                        <div className="flex gap-4 pt-6 border-t">
+                        <div className="flex gap-4 flex-col md:flex-row pt-6 border-t">
                           <button
                             onClick={() =>
                               updateOrderStatus(order.id, "fulfilled")
